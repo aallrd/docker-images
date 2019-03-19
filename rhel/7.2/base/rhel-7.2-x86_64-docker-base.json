@@ -1,0 +1,112 @@
+{
+  "variables": {
+    "docker_img_name": "rhel-7.2",
+    "arch": "64",
+    "cpus": "4",
+    "memory": "2048",
+    "disk_size": "40960",
+    "http_proxy": "{{env `http_proxy`}}",
+    "https_proxy": "{{env `https_proxy`}}",
+    "no_proxy": "{{env `no_proxy`}}",
+    "iso_name": "rhel-server-7.2-x86_64-dvd.iso",
+    "iso_checksum_type": "sha256",
+    "iso_checksum": "03f3a0291634335f6995534d829bd21ffaa0d000004dfeb1b2fb81052d64a4d5",
+    "ks_path": "rhel/7.2/ks.cfg",
+    "mirror": "http://data.local/iso",
+    "mirror_directory": "rhel7.2",
+    "template": "rhel-7.2-x86_64",
+    "user_name": "vagrant"
+  },
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "guest_os_type": "RedHat_64",
+      "headless": "true",
+      "boot_wait": "10s",
+      "boot_command": [
+        "<esc><wait>",
+        "vmlinuz initrd=initrd.img net.ifnames=0 biosdevname=0 ",
+        "ks=http://{{ .HTTPIP }}:{{ .HTTPPort}}/{{user `ks_path`}}",
+        "<enter>"
+      ],
+      "disk_size": "{{user `disk_size`}}",
+      "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+      "hard_drive_interface": "sata",
+      "http_directory": "http",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "{{user `iso_checksum_type`}}",
+      "iso_url": "{{user `mirror`}}/{{user `mirror_directory`}}/{{user `iso_name`}}",
+      "skip_export": "true",
+      "shutdown_command": "echo 'vagrant' | sudo -S /sbin/halt -h -p",
+      "communicator": "ssh",
+      "ssh_username": "{{user `user_name`}}",
+      "ssh_password": "vagrant",
+      "ssh_port": 22,
+      "ssh_wait_timeout": "20m",
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--memory", "{{ user `memory` }}"],
+        ["modifyvm", "{{.Name}}", "--cpus", "{{ user `cpus` }}"]
+      ],
+      "virtualbox_version_file": ".vbox_version",
+      "vm_name": "{{ user `template` }}"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "cfg/repo/rhel.repo",
+      "destination": "/tmp/rhel.repo"
+    },
+    {
+      "type": "file",
+      "source": "cfg/repo/vendors.repo",
+      "destination": "/tmp/vendors.repo"
+    },
+    {
+      "type": "shell",
+      "environment_vars": [
+        "HOME_DIR=/home/{{user `user_name`}}",
+        "http_proxy={{user `http_proxy`}}",
+        "https_proxy={{user `https_proxy`}}",
+        "no_proxy={{user `no_proxy`}}"
+      ],
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
+      "scripts": [
+        "scripts/rhel/networking.sh",
+        "scripts/common/sshd.sh",
+        "scripts/rhel/setup-rhel-dvd-repo.sh",
+        "scripts/rhel/cleanup.sh",
+        "scripts/common/minimize.sh"
+      ]
+    },
+    {
+      "type": "shell",
+      "environment_vars": [
+        "HOME_DIR=/home/vagrant",
+        "http_proxy={{user `http_proxy`}}",
+        "https_proxy={{user `https_proxy`}}",
+        "no_proxy={{user `no_proxy`}}"
+      ],
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E bash '{{.Path}}' rhel",
+      "scripts": [
+          "scripts/docker/mkimage.sh"
+      ]
+    },
+    {
+      "type": "file",
+      "source": "{{user `docker_img_name`}}.tar",
+      "destination": "./",
+      "direction": "download"
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "shell-local",
+      "inline": [
+          "cat {{user `docker_img_name`}}.tar | docker import - {{user `docker_img_name`}}-base",
+          "docker save --output {{user `docker_img_name`}}-docker-base.tar {{user `docker_img_name`}}-base",
+          "rm {{user `docker_img_name`}}.tar"
+      ]
+    }
+  ]
+}

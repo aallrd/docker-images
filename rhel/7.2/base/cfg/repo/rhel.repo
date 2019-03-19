@@ -1,0 +1,32 @@
+[dvd72]
+name=Red Hat Enterprise Linux 7.2 - DVD
+baseurl=http://localhost:4000/dvd/rhel72/
+enabled=1
+gpgcheck=1
+gpgkey=http://localhost:4000/dvd/rhel72/RPM-GPG-KEY-redhat-release
+proxy=_none_
+
+[rhel7-latest]
+name=Red Hat Enterprise Linux 7 - Latest
+baseurl=http://localhost:4000/latest/rhel-7/rhel7/
+enabled=1
+gpgcheck=1
+gpgkey=http://localhost:4000/dvd/rhel72/RPM-GPG-KEY-redhat-release
+proxy=_none_
+
+[rhel7-scl]
+name=Red Hat Enterprise Linux 7 - Software collections
+baseurl=http://localhost:4000/latest/rhel-server-rhscl-7-rpms
+enabled=1
+gpgcheck=1
+gpgkey=http://localhost:4000/dvd/rhel72/RPM-GPG-KEY-redhat-release
+proxy=_none_
+
+[rhel7-optional]
+name=Red Hat Enterprise Linux 7 - Optional
+baseurl=http://localhost:4000/latest/rhel-7-server-optional-rpms
+enabled=1
+gpgcheck=1
+gpgkey=http://localhost:4000/dvd/rhel72/RPM-GPG-KEY-redhat-release
+proxy=_none_
+

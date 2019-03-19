@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<com.cloudbees.tiger.plugins.palace.templates.DockerSlaveTemplate plugin="palace-cloud@2.0.5">
+  <actions>
+    <io.jenkins.blueocean.service.embedded.BlueOceanUrlAction plugin="blueocean-rest-impl@1.3.3">
+      <blueOceanUrlObject class="io.jenkins.blueocean.service.embedded.BlueOceanUrlObjectImpl">
+        <mappedUrl>blue/organizations/jenkins/pipelines/</mappedUrl>
+        <modelObject class="com.cloudbees.tiger.plugins.palace.templates.DockerSlaveTemplate" reference="../../../.."/>
+      </blueOceanUrlObject>
+    </io.jenkins.blueocean.service.embedded.BlueOceanUrlAction>
+  </actions>
+  <description>A docker image to run the grabby tests.</description>
+  <displayName>grabby-test-env</displayName>
+  <disabled>false</disabled>
+  <cpus>1.0</cpus>
+  <memory>256</memory>
+  <jvmArgs></jvmArgs>
+  <jnlpArgs></jnlpArgs>
+  <jvmMemory>128</jvmMemory>
+  <defaultLabel>false</defaultLabel>
+  <remoteFS>/jenkins</remoteFS>
+  <labelString>grabby</labelString>
+  <containerProperties>
+    <com.cloudbees.tiger.plugins.palace.model.URISpec>
+      <value>/net/fs8612/alloc0002055/dumps/CJE/docker.tar.gz</value>
+      <executable>false</executable>
+      <extract>true</extract>
+    </com.cloudbees.tiger.plugins.palace.model.URISpec>
+    <com.cloudbees.tiger.plugins.palace.model.ForcePullContainerProperty/>
+  </containerProperties>
+  <image>localhost:5000/aallrd/rhel-6.4-grabby:latest</image>
+</com.cloudbees.tiger.plugins.palace.templates.DockerSlaveTemplate>

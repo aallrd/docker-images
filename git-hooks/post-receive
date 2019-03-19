@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+echo "post-receive triggered"
+url="${__user:-http://jenkins.local/aallrd}"
+user="${__user:-aallard}"
+if [[ ! -z ${API_TOKEN+x} ]] ; then
+  token="${API_TOKEN}"
+else
+  echo "Post-receive hook failed to trigger remote builds: [${modified_projects[*]}]"
+  echo "You must export the API_TOKEN for user ${user} in the current shell."
+fi
+crumb=$(curl -s "${url}/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,\":\",//crumb)" -u "${user}:${token}")
+if [[ ${crumb} == "" ]] ; then
+  echo "Post-receive hook failed to trigger remote builds: [${modified_projects[*]}]"
+  echo "Failed to generate crumb from ${url} for user ${user}."
+fi
+
+echo "url: ${url}"
+ret=$(curl -s -XPOST "${url}/job/docker-images-seed-jobs/build" -u ${user}:${token} -H "${crumb}")
+if [[ "${ret}" != "" ]] ; then
+  echo "Failed to trigger the build of the seed jobs."
+  echo "${ret}"
+  exit 1
+fi
+
+committed_files=($(git diff-tree --no-commit-id --name-only -r HEAD -1))
+for committed_file in "${committed_files[@]}" ; do
+  modified_projects=(${modified_projects[*]} $(dirname ${committed_file}))
+done
+echo "modified: ${modified_projects[*]}"
+modified_projects=($(printf "%s\n" "${modified_projects[@]}" | sort -u))
+echo "uniq: ${modified_projects[*]}"
+for modified_project in "${modified_projects[@]}" ; do
+  ret=$(curl -s -XPOST "${url}/job/${modified_project}/build" -u "${user}:${token}" -H "${crumb}")
+  if [[ "${ret}" != "" ]] ; then
+    echo "Post-receive hook failed to trigger remote build: [${modified_project}]."
+  else
+    echo "Remote build triggered: [${modified_project}]."
+  fi
+done
+
+exit 0

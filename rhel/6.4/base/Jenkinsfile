@@ -1,0 +1,57 @@
+#!/usr/bin/groovy
+
+pipeline {
+
+    agent {
+        node {
+            label "linux && packer"
+        }
+    }
+
+    environment {
+       projectRoot = "rhel/6.4/base"
+       packerImageName = "${projectRoot}".replaceAll("/", "-")
+       dockerInternalRepo = "localhost:5000"
+       dockerAllRepo = "localhost:5000"
+       dockerImageName = "${dockerInternalRepo}/aallrd/${packerImageName}"
+       dockerAllName = "${dockerAllRepo}/aallrd/${packerImageName}"
+    }
+
+    stages {
+
+        stage("Checking out") {
+            steps {
+                git "https://bitbucket.local/scm/infra/docker-images.git"
+            }
+        }
+
+        stage("Building") {
+            steps {
+                script { ignoreCache = params.force ? '--no-cache' : '' }
+                dir("${projectRoot}") {
+                    sh "packer build rhel-6.4-x86_64-docker-base.json"
+                }
+            }
+        }
+
+        stage("Publishing") {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aallrd-docker-login', passwordVariable: 'password', usernameVariable: 'username')]) {
+                    sh "docker tag ${packerImageName} ${dockerAllName}:latest"
+                    sh "docker tag ${packerImageName} ${dockerImageName}:latest"
+                    sh "docker login ${dockerInternalRepo} -u ${username} -p '${password}' && docker push ${dockerImageName}:latest"
+                    sh "docker tag ${dockerImageName}:latest ${dockerImageName}:${sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()}"
+                    sh "docker login ${dockerInternalRepo} -u ${username} -p '${password}' && docker push ${dockerImageName}:${sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()}"
+                }
+            }
+        }
+
+        stage("Cleaning") {
+            steps {
+                dir("${projectRoot}") {
+                    sh "rm -Rf output-virtualbox-iso packer_cache 2>/dev/null"
+                }
+            }
+        }
+    }
+}

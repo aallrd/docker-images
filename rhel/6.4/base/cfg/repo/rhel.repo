@@ -1,0 +1,38 @@
+[dvd64]
+name=Red Hat Enterprise Linux 6.4 - DVD
+baseurl=http://localhost:4000/dvd/rhel64/
+enabled=1
+gpgcheck=1
+gpgkey=http://localhost:4000/dvd/rhel64/RPM-GPG-KEY-redhat-release
+proxy=_none_
+
+[rhel6-latest]
+name=Red Hat Enterprise Linux 6 - Latest
+baseurl=http://localhost:4000/latest/rhel-6/rhel6/
+enabled=1
+gpgcheck=1
+gpgkey=http://localhost:4000/dvd/rhel64/RPM-GPG-KEY-redhat-release
+proxy=_none_
+
+[rhel6-scl]
+name=Red Hat Enterprise Linux 6 - Software collections
+baseurl=http://localhost:4000/latest/rhel-server-rhscl-6-rpms
+enabled=1
+gpgcheck=1
+gpgkey=http://localhost:4000/dvd/rhel64/RPM-GPG-KEY-redhat-release
+proxy=_none_
+
+[rhel6-optional]
+name=Red Hat Enterprise Linux 6 - Optional
+baseurl=http://localhost:4000/latest/rhel-6-server-optional-rpms
+enabled=1
+gpgcheck=1
+gpgkey=http://localhost:4000/dvd/rhel64/RPM-GPG-KEY-redhat-release
+proxy=_none_
+
+[rhel6-epel]
+name=Red Hat Enterprise Linux 6 - EPEL
+baseurl=http://localhost:4000/latest/rhel-6-server-epel-rpms
+enabled=1
+gpgcheck=0
+proxy=_none_

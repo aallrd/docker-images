@@ -1,0 +1,49 @@
+#!/usr/bin/groovy
+
+pipeline {
+
+    agent {
+        node {
+            label "windows && docker"
+        }
+    }
+
+    environment {
+       projectRoot = "windows/2016/base"
+       imageName = "${projectRoot}".replaceAll("/", "-")
+       dockerInternalRepo = "localhost:5000"
+       dockerAllRepo = "localhost:5000"
+       dockerImageName = "${dockerInternalRepo}/aallrd/${imageName}"
+       dockerAllName = "${dockerAllRepo}/aallrd/${imageName}"
+    }
+
+    stages {
+
+        stage("Checking out") {
+            steps {
+                git "https://bitbucket.local/scm/infra/docker-images.git"
+            }
+        }
+
+        stage("Building") {
+            steps {
+                script { ignoreCache = params.force ? '--no-cache' : '' }
+                dir("${projectRoot}") {
+                    powershell "docker build ${ignoreCache} -t ${imageName} ."
+                }
+            }
+        }
+
+        stage("Publishing") {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aallrd-docker-login', passwordVariable: 'password', usernameVariable: 'username')]) {
+                    powershell "docker tag ${imageName} ${dockerAllName}:latest"
+                    powershell "docker tag ${imageName} ${dockerImageName}:latest"
+                    powershell "docker login ${dockerInternalRepo} -u ${username} -p '${password}' ; docker push ${dockerImageName}:latest"
+                    powershell "docker tag ${dockerImageName}:latest ${dockerImageName}:${powershell(returnStdout: true, script: 'git rev-parse --short HEAD').trim()}"
+                    powershell "docker login ${dockerInternalRepo} -u ${username} -p '${password}' ; docker push ${dockerImageName}:${powershell(returnStdout: true, script: 'git rev-parse --short HEAD').trim()}"
+                }
+            }
+        }
+    }
+}

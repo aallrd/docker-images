@@ -1,0 +1,49 @@
+#!/usr/bin/groovy
+
+pipeline {
+
+    agent {
+        node {
+            label "linux && docker"
+        }
+    }
+
+    environment {
+       projectRoot = "rhel/6.4/maven/3.5.4"
+       imageName = "${projectRoot}".replaceAll('/', '-')
+       dockerInternalRepo = 'localhost:5000'
+       dockerAllRepo = 'localhost:5000'
+       dockerImageName = "${dockerInternalRepo}/aallrd/${imageName}"
+       dockerAllName = "${dockerAllRepo}/aallrd/${imageName}"
+    }
+
+    stages {
+
+        stage("Checking out") {
+            steps {
+                git "https://bitbucket.local/scm/infra/docker-images.git"
+            }
+        }
+
+        stage("Building") {
+            steps {
+                script { ignoreCache = params.force ? '--no-cache' : '' }
+                dir("${projectRoot}") {
+                    sh "docker build ${ignoreCache} -t ${imageName} ."
+                }
+            }
+        }
+
+        stage("Publishing") {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aallrd-docker-login', passwordVariable: 'password', usernameVariable: 'username')]) {
+                    sh "docker tag ${imageName} ${dockerAllName}:latest"
+                    sh "docker tag ${imageName} ${dockerImageName}:latest"
+                    sh "docker login ${dockerInternalRepo} -u ${username} -p '${password}' && docker push ${dockerImageName}:latest"
+                    sh "docker tag ${dockerImageName}:latest ${dockerImageName}:${sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()}"
+                    sh "docker login ${dockerInternalRepo} -u ${username} -p '${password}' && docker push ${dockerImageName}:${sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()}"
+                }
+            }
+        }
+    }
+}
